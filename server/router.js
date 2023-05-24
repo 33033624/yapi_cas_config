@@ -61,7 +61,6 @@ let routerConfig = {
       method: 'get'
     },
 
-    
     {
       action: 'list',
       path: 'list',
@@ -147,6 +146,11 @@ let routerConfig = {
     {
       action: 'logout',
       path: 'logout',
+      method: 'get'
+    },
+    {
+      action: 'casConfig',
+      path: 'casConfig',
       method: 'get'
     },
     {

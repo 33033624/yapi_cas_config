@@ -18,7 +18,7 @@ const renderToHtml = require('../utils/reportHtml');
 const axios = require('axios');
 const HanldeImportData = require('../../common/HandleImportData');
 const _ = require('underscore');
-const createContex = require('../../common/createContext')
+const createContex = require('../../common/createContext');
 
 /**
  * {
@@ -78,17 +78,17 @@ class openController extends baseController {
     let project_id = ctx.params.project_id;
     let dataSync = ctx.params.merge;
 
-    let warnMessage = ''
+    let warnMessage = '';
 
     /**
      * 因为以前接口文档写错了，做下兼容
      */
-    try{
-      if(!dataSync &&ctx.params.dataSync){
-        warnMessage = 'importData Api 已废弃 dataSync 传参，请联系管理员将 dataSync 改为 merge.'
-        dataSync = ctx.params.dataSync
+    try {
+      if (!dataSync && ctx.params.dataSync) {
+        warnMessage = 'importData Api 已废弃 dataSync 传参，请联系管理员将 dataSync 改为 merge.';
+        dataSync = ctx.params.dataSync;
       }
-    }catch(e){}
+    } catch (e) {}
 
     let token = ctx.params.token;
     if (!type || !importDataModule[type]) {
@@ -99,21 +99,21 @@ class openController extends baseController {
       return (ctx.body = yapi.commons.resReturn(null, 40022, 'json 或者 url 参数，不能都为空'));
     }
     try {
-      let request = require("request");// let Promise = require('Promise');
-      let syncGet = function (url){
-          return new Promise(function(resolve, reject){
-              request.get({url : url}, function(error, response, body){
-                  if(error){
-                      reject(error);
-                  }else{
-                      resolve(body);
-                  }
-              });
+      let request = require('request'); // let Promise = require('Promise');
+      let syncGet = function (url) {
+        return new Promise(function (resolve, reject) {
+          request.get({ url: url }, function (error, response, body) {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(body);
+            }
           });
-      } 
-      if(ctx.params.url){
+        });
+      };
+      if (ctx.params.url) {
         content = await syncGet(ctx.params.url);
-      }else if(content.indexOf('http://') === 0 || content.indexOf('https://') === 0){
+      } else if (content.indexOf('http://') === 0 || content.indexOf('https://') === 0) {
         content = await syncGet(content);
       }
       content = JSON.parse(content);
@@ -174,7 +174,7 @@ class openController extends baseController {
 
   handleValue(val, global) {
     let globalValue = ArrayToObject(global);
-    let context = Object.assign({}, {global: globalValue}, this.records);
+    let context = Object.assign({}, { global: globalValue }, this.records);
     return handleParamsValue(val, context);
   }
 
@@ -255,8 +255,7 @@ class openController extends baseController {
         len++;
         if (item.code === 0) {
           successNum++;
-        }
-        else {
+        } else {
           failedNum++;
         }
       });
@@ -280,9 +279,7 @@ class openController extends baseController {
     };
 
     if (ctx.params.email === true && reportsResult.message.failedNum !== 0) {
-      let autoTestUrl = `${
-        ctx.request.origin
-      }/api/open/run_auto_test?id=${id}&token=${token}&mode=${ctx.params.mode}`;
+      let autoTestUrl = `${ctx.request.origin}/api/open/run_auto_test?id=${id}&token=${token}&mode=${ctx.params.mode}`;
       yapi.commons.sendNotice(projectId, {
         title: `YApi自动化测试报告`,
         content: `
@@ -302,7 +299,7 @@ class openController extends baseController {
       });
     }
     let mode = ctx.params.mode || 'html';
-    if(ctx.params.download === true) {
+    if (ctx.params.download === true) {
       ctx.set('Content-Disposition', `attachment; filename=test.${mode}`);
     }
     if (ctx.params.mode === 'json') {
@@ -325,11 +322,13 @@ class openController extends baseController {
     };
     try {
       options.taskId = this.getUid();
-      let data = await crossRequest(options, interfaceData.pre_script, interfaceData.after_script,createContex(
-        this.getUid(),
-        interfaceData.project_id,
-        interfaceData.interface_id
-      ));
+      let data = await crossRequest(
+        options,
+        interfaceData.pre_script,
+        interfaceData.after_script,
+        createContex(this.getUid(), interfaceData.project_id, interfaceData.interface_id),
+        yapi.WEBCONFIG.scriptEnable === true
+      );
       let res = data.res;
 
       result = Object.assign(result, {
@@ -381,14 +380,18 @@ class openController extends baseController {
   }
 
   async handleScriptTest(interfaceData, response, validRes, requestParams) {
-    
     try {
-      let test = await yapi.commons.runCaseScript({
-        response: response,
-        records: this.records,
-        script: interfaceData.test_script,
-        params: requestParams
-      }, interfaceData.col_id, interfaceData.interface_id, this.getUid());
+      let test = await yapi.commons.runCaseScript(
+        {
+          response: response,
+          records: this.records,
+          script: interfaceData.test_script,
+          params: requestParams
+        },
+        interfaceData.col_id,
+        interfaceData.interface_id,
+        this.getUid()
+      );
       if (test.errcode !== 0) {
         test.data.logs.forEach(item => {
           validRes.push({

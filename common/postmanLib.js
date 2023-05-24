@@ -20,36 +20,36 @@ const ContentTypeMap = {
   other: 'text'
 };
 
-const getStorage = async (id)=>{
-  try{
-    if(isNode){
+const getStorage = async id => {
+  try {
+    if (isNode) {
       let storage = global.storageCreator(id);
       let data = await storage.getItem();
       return {
-        getItem: (name)=> data[name],
-        setItem: (name, value)=>{
+        getItem: name => data[name],
+        setItem: (name, value) => {
           data[name] = value;
-          storage.setItem(name, value)
+          storage.setItem(name, value);
         }
-      }
-    }else{
+      };
+    } else {
       return {
-        getItem: (name)=> window.localStorage.getItem(name),
-        setItem: (name, value)=>  window.localStorage.setItem(name, value)
-      }
+        getItem: name => window.localStorage.getItem(name),
+        setItem: (name, value) => window.localStorage.setItem(name, value)
+      };
     }
-  }catch(e){
-    console.error(e)
+  } catch (e) {
+    console.error(e);
     return {
-      getItem: (name)=>{
-        console.error(name, e)
+      getItem: name => {
+        console.error(name, e);
       },
-      setItem: (name, value)=>{
-        console.error(name, value, e)
+      setItem: (name, value) => {
+        console.error(name, value, e);
       }
-    }
+    };
   }
-}
+};
 
 async function httpRequestByNode(options) {
   function handleRes(response) {
@@ -79,10 +79,7 @@ async function httpRequestByNode(options) {
       Object.keys(options.headers).forEach(key => {
         if (/content-type/i.test(key)) {
           if (options.headers[key]) {
-            contentTypeItem = options.headers[key]
-              .split(';')[0]
-              .trim()
-              .toLowerCase();
+            contentTypeItem = options.headers[key].split(';')[0].trim().toLowerCase();
           }
         }
         if (!options.headers[key]) delete options.headers[key];
@@ -130,10 +127,7 @@ function handleContentType(headers) {
   try {
     Object.keys(headers).forEach(key => {
       if (/content-type/i.test(key)) {
-        contentTypeItem = headers[key]
-          .split(';')[0]
-          .trim()
-          .toLowerCase();
+        contentTypeItem = headers[key].split(';')[0].trim().toLowerCase();
       }
     });
     return ContentTypeMap[contentTypeItem] ? ContentTypeMap[contentTypeItem] : ContentTypeMap.other;
@@ -239,13 +233,19 @@ function sandboxByBrowser(context = {}, script) {
 }
 
 /**
- * 
- * @param {*} defaultOptions 
- * @param {*} preScript 
- * @param {*} afterScript 
+ *
+ * @param {*} defaultOptions
+ * @param {*} preScript
+ * @param {*} afterScript
  * @param {*} commonContext  负责传递一些业务信息，crossRequest 不关注具体传什么，只负责当中间人
  */
-async function crossRequest(defaultOptions, preScript, afterScript, commonContext = {}) {
+async function crossRequest(
+  defaultOptions,
+  preScript,
+  afterScript,
+  commonContext = {},
+  scriptEnable = true
+) {
   let options = Object.assign({}, defaultOptions);
   const taskId = options.taskId || Math.random() + '';
   let urlObj = URL.parse(options.url, true),
@@ -283,7 +283,7 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     storage: await getStorage(taskId)
   };
 
-  Object.assign(context, commonContext)
+  Object.assign(context, commonContext);
 
   context.utils = Object.freeze({
     _: _,
@@ -299,12 +299,6 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     unbase64: utils.unbase64,
     axios: axios
   });
-
-  let scriptEnable = false;
-  try {
-    const yapi = require('../server/yapi');
-    scriptEnable = yapi.WEBCONFIG.scriptEnable === true;
-  } catch (err) {}
 
   if (preScript && scriptEnable) {
     context = await sandbox(context, preScript);
@@ -325,13 +319,15 @@ async function crossRequest(defaultOptions, preScript, afterScript, commonContex
     data.req = options;
   } else {
     data = await new Promise((resolve, reject) => {
-      options.error = options.success = function(res, header, data) {
+      options.error = options.success = function (res, header, data) {
         let message = '';
         if (res && typeof res === 'string') {
           res = json_parse(data.res.body);
           data.res.body = res;
         }
-        if (!isNode) message = '请求异常，请检查 chrome network 错误信息... https://juejin.im/post/5c888a3e5188257dee0322af 通过该链接查看教程"）';
+        if (!isNode)
+          message =
+            '请求异常，请检查 chrome network 错误信息... https://juejin.im/post/5c888a3e5188257dee0322af 通过该链接查看教程"）';
         if (isNaN(data.res.status)) {
           reject({
             body: res || message,

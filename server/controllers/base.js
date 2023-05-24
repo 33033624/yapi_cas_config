@@ -6,7 +6,7 @@ const groupModel = require('../models/group.js');
 const tokenModel = require('../models/token.js');
 const _ = require('underscore');
 const jwt = require('jsonwebtoken');
-const {parseToken} = require('../utils/token')
+const { parseToken } = require('../utils/token');
 
 class baseController {
   constructor(ctx) {
@@ -29,7 +29,8 @@ class baseController {
       '/api/user/status',
       '/api/user/logout',
       '/api/user/avatar',
-      '/api/user/login_by_ldap'
+      '/api/user/login_by_ldap',
+      '/api/user/casConfig'
     ];
     if (ignoreRouter.indexOf(ctx.path) > -1) {
       this.$auth = true;
@@ -40,13 +41,13 @@ class baseController {
     let openApiRouter = [
       '/api/open/run_auto_test',
       '/api/open/import_data',
-			'/api/interface/add',
-			'/api/interface/save',
-			'/api/interface/up',
-			'/api/interface/get',
-			'/api/interface/list',
-			'/api/interface/list_menu',
-			'/api/interface/add_cat',
+      '/api/interface/add',
+      '/api/interface/save',
+      '/api/interface/up',
+      '/api/interface/get',
+      '/api/interface/list',
+      '/api/interface/list_menu',
+      '/api/interface/add_cat',
       '/api/interface/getCatMenu',
       '/api/interface/list_cat',
       '/api/project/get',
@@ -59,18 +60,21 @@ class baseController {
     let token = params.token;
 
     // 如果前缀是 /api/open，执行 parse token 逻辑
-    if (token && typeof token === 'string' && (openApiRouter.indexOf(ctx.path) > -1 || ctx.path.indexOf('/api/open/') === 0 )) {
+    if (
+      token &&
+      typeof token === 'string' &&
+      (openApiRouter.indexOf(ctx.path) > -1 || ctx.path.indexOf('/api/open/') === 0)
+    ) {
+      let tokens = parseToken(token);
 
-      let tokens = parseToken(token)
-
-      const oldTokenUid = '999999'
+      const oldTokenUid = '999999';
 
       let tokenUid = oldTokenUid;
 
-      if(!tokens){
+      if (!tokens) {
         let checkId = await this.getProjectIdByToken(token);
-        if(!checkId)return;
-      }else{
+        if (!checkId) return;
+      } else {
         token = tokens.projectToken;
         tokenUid = tokens.uid;
       }
@@ -85,7 +89,7 @@ class baseController {
       // }
 
       let checkId = await this.getProjectIdByToken(token);
-      if(!checkId){
+      if (!checkId) {
         ctx.body = yapi.commons.resReturn(null, 42014, 'token 无效');
       }
       let projectData = await this.projectModel.get(checkId);
@@ -95,13 +99,13 @@ class baseController {
         this.$tokenAuth = true;
         this.$uid = tokenUid;
         let result;
-        if(tokenUid === oldTokenUid){
+        if (tokenUid === oldTokenUid) {
           result = {
             _id: tokenUid,
             role: 'member',
             username: 'system'
-          }
-        }else{
+          };
+        } else {
           let userInst = yapi.getInst(userModel); //创建user实体
           result = await userInst.findById(tokenUid);
         }
@@ -156,7 +160,7 @@ class baseController {
       return false;
     }
   }
-  
+
   async checkRegister() {
     // console.log('config', yapi.WEBCONFIG);
     if (yapi.WEBCONFIG.closeRegister) {

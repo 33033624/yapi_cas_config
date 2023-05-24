@@ -3,11 +3,13 @@ const yapi = require('../yapi.js');
 const baseController = require('./base.js');
 const common = require('../utils/commons.js');
 const ldap = require('../utils/ldap.js');
+const parseString = require('xml2js').parseString;
 
 const interfaceModel = require('../models/interface.js');
 const groupModel = require('../models/group.js');
 const projectModel = require('../models/project.js');
 const avatarModel = require('../models/avatar.js');
+const request = require('request');
 
 const jwt = require('jsonwebtoken');
 
@@ -84,6 +86,21 @@ class userController extends baseController {
   }
 
   /**
+   * 获取cas配置
+   * @interface /user/casConfig
+   * @method GET
+   * @category
+   * @foldnumber 10
+   * @returns {Object}
+   * @example
+   */
+  async casConfig(ctx) {
+    ctx.body = yapi.commons.resReturn({
+      ...yapi.WEBCONFIG.cas
+    });
+  }
+
+  /**
    * 更新
    * @interface /user/up_study
    * @method GET
@@ -107,9 +124,44 @@ class userController extends baseController {
     }
   }
 
+  async third_login(ctx) {
+    const options = yapi.WEBCONFIG.cas;
+    const { AUTH_SERVER, emailPostfix } = options;
+    let ticket = ctx.request.body.ticket || ctx.request.query.ticket;
+    let requestUrl = ctx.request.protocol + '://' + ctx.request.host + ctx.request.path;
+    let validateUrl =
+      AUTH_SERVER + '?service=' + encodeURIComponent(requestUrl) + '&ticket=' + ticket;
+
+    return new Promise((resolve, reject) => {
+      request.get(validateUrl, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+          parseString(body, function (error, result) {
+            if (error) {
+              reject(error);
+            } else {
+              result = result['cas:serviceResponse'];
+              if (result['cas:authenticationFailure']) {
+                reject(result['cas:authenticationFailure'][0]);
+              } else {
+                result = result['cas:authenticationSuccess'][0];
+                let username = result['cas:user'][0];
+                resolve({
+                  email: username + emailPostfix,
+                  username: username
+                });
+              }
+            }
+          });
+        } else {
+          reject(error);
+        }
+      });
+    });
+  }
+
   async loginByToken(ctx) {
     try {
-      let ret = await yapi.emitHook('third_login', ctx);
+      let ret = await this.third_login(ctx);
       let login = await this.handleThirdLogin(ret.email, ret.username);
       if (login === true) {
         yapi.commons.log('login success');
@@ -357,9 +409,7 @@ class userController extends baseController {
       });
       yapi.commons.sendMail({
         to: user.email,
-        contents: `<h3>亲爱的用户：</h3><p>您好，感谢使用YApi可视化接口平台,您的账号 ${
-          params.email
-        } 已经注册成功</p>`
+        contents: `<h3>亲爱的用户：</h3><p>您好，感谢使用YApi可视化接口平台,您的账号 ${params.email} 已经注册成功</p>`
       });
     } catch (e) {
       ctx.body = yapi.commons.resReturn(null, 401, e.message);

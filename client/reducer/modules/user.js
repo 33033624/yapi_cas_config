@@ -3,6 +3,8 @@ import axios from 'axios';
 // Actions
 const LOGIN = 'yapi/user/LOGIN';
 const LOGIN_OUT = 'yapi/user/LOGIN_OUT';
+const CAS_CONFIG = 'yapi/user/CAS_CONFIG';
+
 const LOGIN_TYPE = 'yapi/user/LOGIN_TYPE';
 const GET_LOGIN_STATE = 'yapi/user/GET_LOGIN_STATE';
 const REGISTER = 'yapi/user/REGISTER';
@@ -169,6 +171,13 @@ export function logoutActions() {
   return {
     type: LOGIN_OUT,
     payload: axios.get('/api/user/logout')
+  };
+}
+
+export function casConfigActions() {
+  return {
+    type: CAS_CONFIG,
+    payload: axios.get('/api/user/casConfig')
   };
 }
 
